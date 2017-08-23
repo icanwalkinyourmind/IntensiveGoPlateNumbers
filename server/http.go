@@ -1,24 +1,33 @@
 package server
 
 import (
-	"crypto/md5"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
+	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/confreader"
 	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/rpnr"
 	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/workers"
 )
 
+const configFile = "../config.yaml"
+
+type serverConfig struct {
+	Server     string
+	nOfWorkers int `yaml:"n_of_workers"`
+}
+
+//IPool - pool of routines
 type IPool interface {
 	Size() int
 	Run()
 	AddTaskSyncTimed(f workers.Func, timeout time.Duration) (interface{}, error)
 }
+
+var conf serverConfig
 
 var wp IPool
 
@@ -31,9 +40,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("assets/upload.html"))
 		fmt.Println("method:", r.Method)
 		if r.Method == "GET" {
-			crutime := time.Now().Unix()
-			h := md5.New()
-			io.WriteString(h, strconv.FormatInt(crutime, 10))
 
 			tmpl.Execute(w, struct{ Res string }{Res: "Result: "})
 
@@ -66,10 +72,15 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RunHTTPServer(addr string, n_of_workers int) error {
-	wp = workers.NewPool(n_of_workers)
+func init() {
+	confreader.ReadConfig(configFile, conf)
+	wp = workers.NewPool(conf.nOfWorkers)
 	wp.Run()
+}
+
+//RunHTTPServer - runs http server on address addr
+func RunHTTPServer() error {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	http.HandleFunc("/", rootHandler)
-	return http.ListenAndServe(addr, nil)
+	return http.ListenAndServe(conf.Server, nil)
 }

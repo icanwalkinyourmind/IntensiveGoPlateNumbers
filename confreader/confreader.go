@@ -8,13 +8,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type Config struct {
-	Server  string `yaml:"server"`
-	Port    string `yaml:"port"`
-	Workers int    `yaml:"workers"`
-}
-
-func (c *Config) ReadConfig(fName string, conf interface{}) error {
+// ReadConfig - parse yaml config
+func ReadConfig(fName string, conf interface{}) error {
 	file, err := os.Open(fName)
 	if err != nil {
 		return fmt.Errorf("can't open YAML file %q: %s", fName, err)
