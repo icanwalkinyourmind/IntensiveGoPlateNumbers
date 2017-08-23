@@ -1,0 +1,2 @@
+adapter: sqlite3
+database: /Users/v.medvedev/go/projects/IntensiveGoPlateNumbers/etc/numbers.db

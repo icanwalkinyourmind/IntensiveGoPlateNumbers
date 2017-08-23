@@ -3,19 +3,21 @@ package confreader
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
+	"path"
+	"runtime"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 // ReadConfig - parse yaml config
 func ReadConfig(fName string, conf interface{}) error {
-	file, err := os.Open(fName)
-	if err != nil {
-		return fmt.Errorf("can't open YAML file %q: %s", fName, err)
+	_, caller, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
 	}
+	fPath := path.Dir(caller) + "/../etc/" + fName + "conf.yaml"
 
-	data, err := ioutil.ReadAll(file)
+	data, err := ioutil.ReadFile(fPath)
 	if err != nil {
 		return fmt.Errorf("can't read yaml file %q: %s", fName, err)
 	}

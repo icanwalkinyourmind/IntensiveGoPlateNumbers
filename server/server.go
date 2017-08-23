@@ -8,16 +8,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/confreader"
+	"../confreader"
 	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/rpnr"
 	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/workers"
 )
 
-const configFile = "../config.yaml"
-
 type serverConfig struct {
-	Server     string
-	nOfWorkers int `yaml:"n_of_workers"`
+	Server  string
+	Workers int
 }
 
 //IPool - pool of routines
@@ -73,8 +71,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	confreader.ReadConfig(configFile, conf)
-	wp = workers.NewPool(conf.nOfWorkers)
+	if err := confreader.ReadConfig("server", &conf); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(conf)
+	wp = workers.NewPool(conf.Workers)
 	wp.Run()
 }
 
