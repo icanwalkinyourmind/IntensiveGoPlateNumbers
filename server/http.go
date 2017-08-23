@@ -20,11 +20,7 @@ type IPool interface {
 	AddTaskSyncTimed(f workers.Func, timeout time.Duration) (interface{}, error)
 }
 
-var wp IPool = workers.NewPool(5)
-
-func init() {
-	wp.Run()
-}
+var wp IPool
 
 const requestWaitInQueueTimeout = time.Millisecond * 100
 
@@ -70,7 +66,9 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RunHTTPServer(addr string) error {
+func RunHTTPServer(addr string, n_of_workers int) error {
+	wp = workers.NewPool(n_of_workers)
+	wp.Run()
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	http.HandleFunc("/", rootHandler)
 	return http.ListenAndServe(addr, nil)

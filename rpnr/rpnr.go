@@ -35,9 +35,10 @@ func GetPlateNumber(filename string) (string, string) {
 	defer copyPlate.Release()
 
 	//Getting all contours on the plate as Seq
-	var point opencv.Point
-	point.X = 0
-	point.Y = 0
+	point := opencv.Point{
+		X: 0,
+		Y: 0,
+	}
 	borderSequance := copyPlate.FindContours(opencv.CV_RETR_LIST, opencv.CV_CHAIN_APPROX_SIMPLE, point)
 	defer borderSequance.Release()
 	numberOfBorders := 0
