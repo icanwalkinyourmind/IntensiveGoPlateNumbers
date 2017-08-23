@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	"./confreader"
-	"./server"
+	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/confreader"
+	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/server"
 )
 
 func main() {

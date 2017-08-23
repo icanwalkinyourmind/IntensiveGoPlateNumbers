@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jirfag/gointensive/lec3/2_http_pool/workers"
+	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/workers"
 
 	"github.com/golang/mock/gomock"
 )

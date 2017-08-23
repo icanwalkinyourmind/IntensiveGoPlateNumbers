@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"../rpnr"
-	"../workers"
+	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/rpnr"
+	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/workers"
 )
 
 type IPool interface {
