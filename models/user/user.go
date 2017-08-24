@@ -13,8 +13,12 @@ type User struct {
 	Password  string
 }
 
-func (u *User) GetOrCreate() error {
-	return db.Get().FirstOrCreate(u, User{Username: u.Username, Password: u.Password}).Error
+func (u *User) Get() error {
+	return db.Get().First(u).Error
+}
+
+func (u *User) Create() error {
+	return db.Get().Create(u).Error
 }
 
 func init() {

@@ -7,9 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="assets/img/icon.jpg">
-
     <title>ANPR</title>
-
     <!-- Bootstrap core CSS -->
     <link href="assets/css/bootstrap.min.css" rel="stylesheet">
 
@@ -18,53 +16,37 @@
 </head>
 
 <body>
-
     <div class="site-wrapper">
-
         <div class="site-wrapper-inner">
-
             <div class="cover-container">
-
                 <div class="masthead clearfix">
                     <div class="inner">
-                        <h1 class="masthead-brand">ANPR in Golang</h1>
-                        <nav class="nav nav-masthead">
-                            <a class="nav-link active" href="/">Home</a>
-                            <a class="nav-link" href="#">History</a>
-                            <a class="nav-link" href="/login">Log out</a>
-                        </nav>
+                        <h3 class="masthead-brand">ANPR in Golang</h3>
+                        <a href="/login" class="myregistration">Already have an account?</a>
                     </div>
                 </div>
-
-                <div class="inner cover">
-                    <h2 class="cover-heading">Download your image</h2>
+                <form class="form-signin" action="http://127.0.0.1:8000/register" method="post">
+                    <h1 class="cover-heading">Sign up</h1>
                     <br>
-                    <p class="lead">This is the automatic license plate recognition for russian number plates. Download the image you want to recognize.</p>
+                    <input type="text" name="username" class="form-control" placeholder="User name" required autofocus>
+                    <input type="password" name="password" class="form-control" placeholder="Password" required>
+                    <input type="password" name="confirm" class="form-control" placeholder="Confirm password" required>
                     <br>
-                    <p class="lead">
-                        <form enctype="multipart/form-data" action="http://127.0.0.1:8000/" method="post">
-                            <input type="file" name="uploadfile" />
-                            <!-- <input type="hidden" name="token" value="{{.}}" /> -->
-                            <input class="btn btn-lg btn-secondary" type="submit" value="Recognize" />
-                            <br>
-                        </form>
-
-                    </p>
-                </div>
+                    <br>
+                    <div class="inner cover">
+                        <input class="btn btn-lg btn-secondary" type="submit" value="Register" />
+                    </div>
+                    <br>
+                </form>
                 <b style="color: #FFD700">{{.Res}}</b>
                 <div class="mastfoot">
                     <div class="inner">
                         <p>ANPR in Golang for @mail.ru group by <a href="https://vk.com/ruben97">Oganesyan.R</a>, <a href="https://vk.com/icanwalkinyourmind">Medvedev.V</a>, <a href="https://vk.com/ivan_off_ivan">Kurkin.N</a>.</p>
                     </div>
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
-
 </body>
 
 </html>

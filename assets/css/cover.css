@@ -109,7 +109,7 @@ body {
 @media (min-width: 48em) {
     .masthead-brand {
         color: #FFD700;
-        float: middle;
+        float: left;
     }
     .nav-masthead {
         float: right;
@@ -173,4 +173,17 @@ body {
     .cover-container {
         width: 42rem;
     }
+}
+
+.form-signin {
+    width: 250px;
+    margin-left: 220px;
+}
+
+.myregistration {
+    float: right;
+}
+
+.myform {
+    float: right;
 }

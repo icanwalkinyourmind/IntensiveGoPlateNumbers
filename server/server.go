@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"io"
@@ -9,8 +10,10 @@ import (
 	"time"
 
 	"../confreader"
-	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/rpnr"
-	"github.com/icanwalkinyourmind/IntensiveGoPlateNumbers/workers"
+	"../contexts/userlogin"
+	"../models/user"
+	"../rpnr"
+	"../workers"
 )
 
 type serverConfig struct {
@@ -31,13 +34,71 @@ var wp IPool
 
 const requestWaitInQueueTimeout = time.Millisecond * 100
 
+var ctx = context.Background()
+
 // ab -c10 -n20 localhost:8000/hello
+
+func checkLogin(w http.ResponseWriter, r *http.Request) {
+	val, ok := ctx.Value(userlogin.UserLoginKey).(string)
+	fmt.Println(val, ok)
+	if !ok {
+		http.Redirect(w, r, "/login", 301)
+	}
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := wp.AddTaskSyncTimed(func() interface{} {
+		tmpl := template.Must(template.ParseFiles("assets/login.html"))
+		fmt.Println("method:", r.Method)
+		if r.Method == http.MethodGet {
+			tmpl.Execute(w, nil)
+		} else {
+			token, _ := userlogin.LoginUser(r)
+			ctx = userlogin.NewContext(ctx, token)
+			http.Redirect(w, r, "/", 301)
+		}
+		return nil
+	}, requestWaitInQueueTimeout)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
+	}
+}
+
+func regHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := wp.AddTaskSyncTimed(func() interface{} {
+		tmpl := template.Must(template.ParseFiles("assets/registration.html"))
+		fmt.Println("method:", r.Method)
+		if r.Method == http.MethodGet {
+			tmpl.Execute(w, nil)
+		} else {
+			if r.FormValue("password") != r.FormValue("confirm") {
+				tmpl.Execute(w, struct{ Res string }{Res: "Passwords don't match"})
+				return nil
+			}
+			u := user.User{Username: r.FormValue("username"), Password: r.FormValue("password")}
+			err := u.Create()
+			if err != nil {
+				tmpl.Execute(w, struct{ Res string }{Res: "Can't create user"})
+				return nil
+			}
+			token, _ := userlogin.LoginUser(r)
+			ctx = userlogin.NewContext(ctx, token)
+			http.Redirect(w, r, "/", 301)
+		}
+		return nil
+	}, requestWaitInQueueTimeout)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
+	}
+}
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
 		tmpl := template.Must(template.ParseFiles("assets/upload.html"))
 		fmt.Println("method:", r.Method)
-		if r.Method == "GET" {
+		fmt.Println("in root")
+		checkLogin(w, r)
+		if r.Method == http.MethodGet {
 
 			tmpl.Execute(w, struct{ Res string }{Res: "Result: "})
 
@@ -83,5 +144,7 @@ func init() {
 func RunHTTPServer() error {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/register", regHandler)
 	return http.ListenAndServe(conf.Server, nil)
 }
