@@ -124,6 +124,24 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := wp.AddTaskSyncTimed(func() interface{} {
+		u, ok := loggedin.FromContext(r.Context())
+		http.Error(w, fmt.Sprintf("error: %s!\n", ok), 500)
+		fmt.Println("in logout " + u.Username)
+		if !ok {
+			http.Redirect(w, r, "/login", 301)
+			return nil
+		}
+		fmt.Println("after redirect")
+		delete(sessions, u.Username)
+		return nil
+	}, requestWaitInQueueTimeout)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
+	}
+}
+
 func init() {
 	if err := confreader.ReadConfig("server", &conf); err != nil {
 		fmt.Println(err)
@@ -138,8 +156,8 @@ func RunHTTPServer() error {
 	mux := http.NewServeMux()
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	mux.HandleFunc("/login", loginHandler)
-	mux.Handle("/", loggedin.AddLoginContext(http.HandlerFunc(rootHandler), &sessions))
+	mux.HandleFunc("/", rootHandler)
+	mux.HandleFunc("/logout", logoutHandler)
 	mux.HandleFunc("/register", regHandler)
-	mux.HandleFunc("/logout", regHandler)
-	return http.ListenAndServe(conf.Server, mux)
+	return http.ListenAndServe(conf.Server, loggedin.AddLoginContext(mux, &sessions))
 }

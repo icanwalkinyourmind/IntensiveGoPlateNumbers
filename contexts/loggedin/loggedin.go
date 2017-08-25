@@ -30,13 +30,8 @@ func AddLoginContext(h http.Handler, sessions *map[string]string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username, _ := controller.GetValueFromCookie("username", r)
 		t, _ := controller.GetValueFromCookie("token", r)
-		var sessionToken string
-		if username != "" {
-			sessionToken = (*sessions)[username]
-		} else {
-			sessionToken = "withouttoken"
-		}
-		if sessionToken == t {
+		sessionToken, ok := (*sessions)[username]
+		if sessionToken == t && ok {
 			u := user.User{Username: username}
 			u.GetUserByName()
 			ctx, _ := NewContext(r.Context(), u)
