@@ -28,6 +28,7 @@ func FromContext(ctx context.Context) (user.User, bool) {
 
 func AddLoginContext(h http.Handler, sessions *map[string]string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("%+v", r)
 		username, _ := controller.GetValueFromCookie("username", r)
 		t, _ := controller.GetValueFromCookie("token", r)
 		sessionToken, ok := (*sessions)[username]

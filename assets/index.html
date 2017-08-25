@@ -11,7 +11,7 @@
     <title>ANPR</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap_min.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
     <link href="assets/css/cover.css" rel="stylesheet">
@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="inner cover">
-                    <h2 class="cover-heading">Download your image {{.Username}}</h2>
+                    {{if .Username}} <h2 class="cover-heading">Download your image {{.Username}}</h2> {{end}}
                     <br>
                     <p class="lead">This is the automatic license plate recognition for russian number plates. Download the image you want to recognize.</p>
                     <br>
@@ -49,7 +49,8 @@
                         </form>
                     </p>
                 </div>
-                <b style="color: #FFD700">{{.Res}}</b>
+                {{if .Res}} <b style="color: #FFD700">{{.Res}}</b> {{end}}
+                {{if .Err}} <b style="color: #FFD700">{{.Err}}</b> {{end}}
                 <div class="mastfoot">
                     <div class="inner">
                         <p>ANPR in Golang for @mail.ru group by <a href="https://vk.com/ruben97">Oganesyan.R</a>, <a href="https://vk.com/icanwalkinyourmind">Medvedev.V</a>, <a href="https://vk.com/ivan_off_ivan">Kurkin.N</a>.</p>

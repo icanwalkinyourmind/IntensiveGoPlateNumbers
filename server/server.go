@@ -90,6 +90,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		u, ok := loggedin.FromContext(r.Context())
 		if !ok {
 			http.Redirect(w, r, "/login", 301)
+			return nil
 		}
 		if r.Method == http.MethodGet {
 
@@ -100,6 +101,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 			file, handler, err := r.FormFile("uploadfile")
 			if err != nil {
 				fmt.Println(err)
+				index.Execute(w, struct{ Res, Username, Err string }{Username: u.Username, Err: err.Error()})
 				return nil
 			}
 			defer file.Close()
@@ -107,13 +109,14 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 			f, err := os.OpenFile("./"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 			if err != nil {
 				fmt.Println(err)
+				index.Execute(w, struct{ Res, Username, Err string }{Username: u.Username, Err: err.Error()})
 				return nil
 			}
 			defer f.Close()
 			io.Copy(f, file)
 			//
 			result, er := rpnr.GetPlateNumber(handler.Filename)
-			index.Execute(w, struct{ Res string }{Res: "Result: " + result + er})
+			index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + result + er})
 			//
 		}
 		return nil
@@ -127,14 +130,14 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
 		u, ok := loggedin.FromContext(r.Context())
-		http.Error(w, fmt.Sprintf("error: %s!\n", ok), 500)
-		fmt.Println("in logout " + u.Username)
 		if !ok {
 			http.Redirect(w, r, "/login", 301)
 			return nil
 		}
-		fmt.Println("after redirect")
-		delete(sessions, u.Username)
+		expiration := time.Now().AddDate(0, 0, -1)
+		cookie := &http.Cookie{Name: "username", Value: u.Username, Expires: expiration}
+		http.SetCookie(w, cookie)
+		login.Execute(w, nil)
 		return nil
 	}, requestWaitInQueueTimeout)
 	if err != nil {
@@ -156,8 +159,8 @@ func RunHTTPServer() error {
 	mux := http.NewServeMux()
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	mux.HandleFunc("/login", loginHandler)
-	mux.HandleFunc("/", rootHandler)
-	mux.HandleFunc("/logout", logoutHandler)
+	mux.Handle("/", loggedin.AddLoginContext(http.HandlerFunc(rootHandler), &sessions))
+	mux.Handle("/logout", loggedin.AddLoginContext(http.HandlerFunc(logoutHandler), &sessions))
 	mux.HandleFunc("/register", regHandler)
-	return http.ListenAndServe(conf.Server, loggedin.AddLoginContext(mux, &sessions))
+	return http.ListenAndServe(conf.Server, mux)
 }
