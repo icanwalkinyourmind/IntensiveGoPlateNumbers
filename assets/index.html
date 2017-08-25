@@ -37,18 +37,16 @@
                 </div>
 
                 <div class="inner cover">
-                    <h2 class="cover-heading">Download your image</h2>
+                    <h2 class="cover-heading">Download your image {{.Username}}</h2>
                     <br>
                     <p class="lead">This is the automatic license plate recognition for russian number plates. Download the image you want to recognize.</p>
                     <br>
                     <p class="lead">
                         <form enctype="multipart/form-data" action="http://127.0.0.1:8000/" method="post">
                             <input type="file" name="uploadfile" />
-                            <!-- <input type="hidden" name="token" value="{{.}}" /> -->
                             <input class="btn btn-lg btn-secondary" type="submit" value="Recognize" />
                             <br>
                         </form>
-
                     </p>
                 </div>
                 <b style="color: #FFD700">{{.Res}}</b>

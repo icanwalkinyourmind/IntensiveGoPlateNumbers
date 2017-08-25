@@ -1,20 +1,19 @@
 package user
 
 import (
-
-	"github.com/jinzhu/gorm"
 	"../../db"
+	"github.com/jinzhu/gorm"
 )
 
 type User struct {
 	gorm.Model
 
-	Username  string `gorm:"not null;unique_index"`
-	Password  string
+	Username string `gorm:"not null;unique_index"`
+	Password string
 }
 
-func (u *User) Get() error {
-	return db.Get().First(u).Error
+func (u *User) GetUserByName() error {
+	return db.Get().Where("username = ?", u.Username).First(u).Error
 }
 
 func (u *User) Create() error {

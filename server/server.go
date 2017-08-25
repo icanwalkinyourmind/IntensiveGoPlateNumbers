@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"html/template"
 	"io"
@@ -10,10 +9,10 @@ import (
 	"time"
 
 	"../confreader"
-	"../contexts/userlogin"
-	"../models/user"
+	"../contexts/loggedin"
 	"../rpnr"
 	"../workers"
+	"./controller"
 )
 
 type serverConfig struct {
@@ -28,34 +27,33 @@ type IPool interface {
 	AddTaskSyncTimed(f workers.Func, timeout time.Duration) (interface{}, error)
 }
 
+const (
+	requestWaitInQueueTimeout = time.Millisecond * 100
+	solt                      = "i_love_perl"
+)
+
+//html templates
+var index = template.Must(template.ParseFiles("assets/index.html"))
+var login = template.Must(template.ParseFiles("assets/login.html"))
+var registration = template.Must(template.ParseFiles("assets/registration.html"))
+
+//very important stuff
+var sessions = make(map[string]string)
 var conf serverConfig
-
 var wp IPool
-
-const requestWaitInQueueTimeout = time.Millisecond * 100
-
-var ctx = context.Background()
-
-// ab -c10 -n20 localhost:8000/hello
-
-func checkLogin(w http.ResponseWriter, r *http.Request) {
-	val, ok := ctx.Value(userlogin.UserLoginKey).(string)
-	fmt.Println(val, ok)
-	if !ok {
-		http.Redirect(w, r, "/login", 301)
-	}
-}
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
-		tmpl := template.Must(template.ParseFiles("assets/login.html"))
 		fmt.Println("method:", r.Method)
 		if r.Method == http.MethodGet {
-			tmpl.Execute(w, nil)
+			login.Execute(w, nil)
 		} else {
-			token, _ := userlogin.LoginUser(r)
-			ctx = userlogin.NewContext(ctx, token)
-			http.Redirect(w, r, "/", 301)
+			err := controller.LoginUser(w, r, &sessions)
+			if err != nil {
+				login.Execute(w, nil)
+			} else {
+				index.Execute(w, nil)
+			}
 		}
 		return nil
 	}, requestWaitInQueueTimeout)
@@ -66,24 +64,17 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func regHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
-		tmpl := template.Must(template.ParseFiles("assets/registration.html"))
+		tmpl := registration
 		fmt.Println("method:", r.Method)
 		if r.Method == http.MethodGet {
 			tmpl.Execute(w, nil)
 		} else {
-			if r.FormValue("password") != r.FormValue("confirm") {
-				tmpl.Execute(w, struct{ Res string }{Res: "Passwords don't match"})
-				return nil
-			}
-			u := user.User{Username: r.FormValue("username"), Password: r.FormValue("password")}
-			err := u.Create()
+			err := controller.RegisterUser(w, r)
 			if err != nil {
-				tmpl.Execute(w, struct{ Res string }{Res: "Can't create user"})
-				return nil
+				tmpl.Execute(w, struct{ Res string }{Res: err.Error()})
+			} else {
+				http.Redirect(w, r, "/login", 301)
 			}
-			token, _ := userlogin.LoginUser(r)
-			ctx = userlogin.NewContext(ctx, token)
-			http.Redirect(w, r, "/", 301)
 		}
 		return nil
 	}, requestWaitInQueueTimeout)
@@ -94,13 +85,15 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
-		tmpl := template.Must(template.ParseFiles("assets/upload.html"))
 		fmt.Println("method:", r.Method)
 		fmt.Println("in root")
-		checkLogin(w, r)
+		u, ok := loggedin.FromContext(r.Context())
+		if !ok {
+			http.Redirect(w, r, "/login", 301)
+		}
 		if r.Method == http.MethodGet {
 
-			tmpl.Execute(w, struct{ Res string }{Res: "Result: "})
+			index.Execute(w, struct{ Res, Username string }{Res: "", Username: u.Username})
 
 		} else {
 			r.ParseMultipartForm(32 << 20)
@@ -120,7 +113,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 			io.Copy(f, file)
 			//
 			result, er := rpnr.GetPlateNumber(handler.Filename)
-			tmpl.Execute(w, struct{ Res string }{Res: "Result: " + result + er})
+			index.Execute(w, struct{ Res string }{Res: "Result: " + result + er})
 			//
 		}
 		return nil
@@ -142,9 +135,11 @@ func init() {
 
 //RunHTTPServer - runs http server on address addr
 func RunHTTPServer() error {
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
-	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/register", regHandler)
-	return http.ListenAndServe(conf.Server, nil)
+	mux := http.NewServeMux()
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
+	mux.HandleFunc("/login", loginHandler)
+	mux.Handle("/", loggedin.AddLoginContext(http.HandlerFunc(rootHandler), &sessions))
+	mux.HandleFunc("/register", regHandler)
+	mux.HandleFunc("/logout", regHandler)
+	return http.ListenAndServe(conf.Server, mux)
 }
