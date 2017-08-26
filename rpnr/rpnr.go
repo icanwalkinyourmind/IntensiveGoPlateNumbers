@@ -13,6 +13,7 @@ import (
 	"github.com/lazywei/go-opencv/opencv"
 	"github.com/otiai10/gosseract"
 )
+import "errors"
 
 const numberLength int = 9
 
@@ -142,21 +143,24 @@ func getLicensePlateNumber(plate *opencv.IplImage, sortedBorders []opencv.Rect) 
 	return result
 }
 
-func GetPlateNumber(filename string) (string, float64, string) {
+func GetPlateNumber(filename string) (string, float64, error) {
 	image := opencv.LoadImage(filename, 0)
 	if image == nil {
-		return "", 0, "Couldn`t open file \n"
+		return "", 0, errors.New("Couldn`t open file")
 	}
 	defer image.Release()
 
 	plate := getLicensePlate(image)
 	defer plate.Release()
 	if plate == nil {
-		return "", 0, "Couldn`t detect plates\n"
+		return "", 0, errors.New("Couldn`t detect plates")
 	}
 	copyPlate := plate.Clone()
 	defer copyPlate.Release()
 
 	result := getLicensePlateNumber(plate, getSortedSliceOfBorders(getSliceOfContours(copyPlate)))
-	return result, float64(image.Width()) / float64(image.Height()), ""
+	if len(result) < numberLength-1 {
+		result = "Can't recognize"
+	}
+	return result, float64(image.Width()) / float64(image.Height()), nil
 }

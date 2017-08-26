@@ -91,11 +91,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if r.Method == http.MethodGet {
 			var notations []history.Notation
-			//var paths []string
 			history.GetLatest(u.ID, 10, &notations)
-			/*for _, n := range notations {
-				paths = append(paths, n.Img)
-			}*/
 			hist.Execute(w, struct {
 				Res      string
 				Username string
@@ -148,8 +144,12 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 				log.Println(err)
 				http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
 			}
-			result, resolution, er := rpnr.GetPlateNumber(handler.Filename)
-			index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + result + er})
+			result, resolution, err := rpnr.GetPlateNumber(handler.Filename)
+			if err != nil {
+				index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + err.Error()})
+				return nil
+			}
+			index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + result})
 			n := history.Notation{
 				Number: result,
 				Img:    handler.Filename,

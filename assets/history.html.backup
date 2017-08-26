@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -17,18 +16,17 @@
     <link href="assets/css/cover.css" rel="stylesheet">
 </head>
 
+<script>
+    function mults(str) {
+    if(str.search(/^([\d\s]+)\*([\d\s]+)$/) != -1) {
+                   var arr = str.match(/^([\d\s]+)\*([\d\s]+)$/);
+                   return parseInt(arr[0]) * parseInt(arr[2]);
+    }
+    return "NaN";
+}
+</script>
+
 <body>
-
-  <script>
-      function mults(str) {
-      if(str.search(/^([\d\s]+)\*([\d\s]+)$/) != -1) {
-                     var arr = str.match(/^([\d\s]+)\*([\d\s]+)$/);
-                     return parseInt(arr[0]) * parseInt(arr[2]);
-      }
-      return "NaN";
-  }
-  </script>
-
     <div class="site-wrapper">
 
         <div class="site-wrapper-inner">
@@ -46,30 +44,18 @@
                     </div>
                 </div>
 
-                <br>
-                <br>
                 <div class="inner cover">
                     <h2 class="cover-heading">History of {{.Username}}</h2>
                     <br>
                     <br>
+                    <b style="color: #FFD700">{{.Res}} </b>
                     <br>
-                    <div style="top:50%;height:450px;line-height:3em;overflow:auto;margin:auto;padding:5px;display: ;" >
-                        {{range .Srcs}}
-                        <li><b>
-                            Date: {{.GetFormatedCreatedAt}}<br>
-                            Number: {{.Number}}<br>
-
-                            <img id="resultElem" src="{{.Img}}" height="200"/>
-                            </li>
-                            <br>
-                            {{end}}
-                            <script>
-                                const resultMulty=mults("200*{{.ImgRes}}");
-                                const resultElem = document.getElementById('resultElem');
-                                resultElem.width=resultMulty;
-                            </script>
-                    </div>
-
+                    {{range .Srcs}}<li><b>{{.ImgRes}}<img id="resultElem" src="{{.Img}}" height="200"/></script><b></li>
+                    <script>
+                        const resultMulty=mults("200*{{.ImgRes}}");
+                        const resultElem = document.getElementById('resultElem');
+                        resultElem.width=resultMulty;
+                    </script>{{end}}
                 </div>
                 <div class="mastfoot">
                     <div class="inner">

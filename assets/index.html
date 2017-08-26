@@ -32,12 +32,15 @@
                             <a class="nav-link active" href="/">Home</a>
                             <a class="nav-link" href="/history">History</a>
                             <a class="nav-link" href="/logout">Log out</a>
+                            <p class="nav-link" style="color:#FFD700">{{.Username}}</p>
+
                         </nav>
+
                     </div>
                 </div>
 
                 <div class="inner cover">
-                    {{if .Username}} <h2 class="cover-heading">Download your image {{.Username}}</h2> {{end}}
+                    <h2 class="cover-heading">Download your image</h2>
                     <br>
                     <p class="lead">This is the automatic license plate recognition for russian number plates. Download the image you want to recognize.</p>
                     <br>
@@ -49,8 +52,7 @@
                         </form>
                     </p>
                 </div>
-                {{if .Res}} <b style="color: #FFD700">{{.Res}}</b> {{end}}
-                {{if .Err}} <b style="color: #FFD700">{{.Err}}</b> {{end}}
+                <b style="color: #FFD700">{{.Res}}</b>
                 <div class="mastfoot">
                     <div class="inner">
                         <p>ANPR in Golang for @mail.ru group by <a href="https://vk.com/ruben97">Oganesyan.R</a>, <a href="https://vk.com/icanwalkinyourmind">Medvedev.V</a>, <a href="https://vk.com/ivan_off_ivan">Kurkin.N</a>.</p>

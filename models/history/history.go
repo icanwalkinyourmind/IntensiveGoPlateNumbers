@@ -1,6 +1,8 @@
 package history
 
 import (
+	"time"
+
 	"../../db"
 	"github.com/jinzhu/gorm"
 )
@@ -26,8 +28,10 @@ func GetLatest(user, limit uint, notations *[]Notation) interface{} {
 	return db.Get().Limit(limit).Where("user_id = ?", user).Order("created_at desc").Find(notations).Error
 }
 
+func (n *Notation) GetFormatedCreatedAt() string {
+	return n.CreatedAt.Format(time.Stamp)
+}
+
 func init() {
-	//	if !cfg.IsProduction() {
 	db.Get().AutoMigrate(&Notation{})
-	//	}
 }
