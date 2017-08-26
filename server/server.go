@@ -149,7 +149,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 				index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + err.Error()})
 				return nil
 			}
-			index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + result})
+			index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + result, Username: u.Username})
 			n := history.Notation{
 				Number: result,
 				Img:    handler.Filename,

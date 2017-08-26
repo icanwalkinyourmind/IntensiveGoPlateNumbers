@@ -45,9 +45,9 @@
                     <p class="lead">This is the automatic license plate recognition for russian number plates. Download the image you want to recognize.</p>
                     <br>
                     <p class="lead">
-                        <form enctype="multipart/form-data" action="http://127.0.0.1:8000/" method="post">
+                        <form enctype="multipart/form-data" action="http://127.0.0.1:8000/" method="post" onsubmit="document.getElementById('submit').disable=true; document.getElementById('submit').value='In progress..';">
                             <input type="file" name="uploadfile" />
-                            <input class="btn btn-lg btn-secondary" type="submit" value="Recognize" />
+                            <input class="btn btn-lg btn-secondary" id="submit" type="submit" value="Recognize"/>
                             <br>
                         </form>
                     </p>

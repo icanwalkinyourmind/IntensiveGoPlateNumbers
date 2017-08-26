@@ -19,16 +19,6 @@
 
 <body>
 
-  <script>
-      function mults(str) {
-      if(str.search(/^([\d\s]+)\*([\d\s]+)$/) != -1) {
-                     var arr = str.match(/^([\d\s]+)\*([\d\s]+)$/);
-                     return parseInt(arr[0]) * parseInt(arr[2]);
-      }
-      return "NaN";
-  }
-  </script>
-
     <div class="site-wrapper">
 
         <div class="site-wrapper-inner">
@@ -58,16 +48,11 @@
                         <li><b>
                             Date: {{.GetFormatedCreatedAt}}<br>
                             Number: {{.Number}}<br>
-
+                          </b>
                             <img id="resultElem" src="{{.Img}}" height="200"/>
                             </li>
                             <br>
                             {{end}}
-                            <script>
-                                const resultMulty=mults("200*{{.ImgRes}}");
-                                const resultElem = document.getElementById('resultElem');
-                                resultElem.width=resultMulty;
-                            </script>
                     </div>
 
                 </div>
