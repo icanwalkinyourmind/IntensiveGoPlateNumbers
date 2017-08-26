@@ -142,22 +142,21 @@ func getLicensePlateNumber(plate *opencv.IplImage, sortedBorders []opencv.Rect) 
 	return result
 }
 
-func GetPlateNumber(filename string) (string, string) {
+func GetPlateNumber(filename string) (string, float64, string) {
 	image := opencv.LoadImage(filename, 0)
 	if image == nil {
-		return "", "Couldn`t open file \n"
+		return "", 0, "Couldn`t open file \n"
 	}
 	defer image.Release()
 
 	plate := getLicensePlate(image)
 	defer plate.Release()
 	if plate == nil {
-		return "", "Couldn`t detect plates\n"
+		return "", 0, "Couldn`t detect plates\n"
 	}
 	copyPlate := plate.Clone()
 	defer copyPlate.Release()
 
 	result := getLicensePlateNumber(plate, getSortedSliceOfBorders(getSliceOfContours(copyPlate)))
-
-	return result, ""
+	return result, float64(image.Width()) / float64(image.Height()), ""
 }

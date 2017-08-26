@@ -25,7 +25,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request, sessions *map[string]stri
 		cookie := &http.Cookie{Name: "username", Value: u.Username, Expires: expiration}
 		http.SetCookie(w, cookie)
 		token.SetToken(w, u.Username, sessions)
-		http.Redirect(w, r, "/", 301)
+		http.Redirect(w, r, "/", 302)
 		return nil
 	}
 	return errors.New("login failed")
@@ -41,7 +41,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	http.Redirect(w, r, "/login", http.StatusContinue)
+	http.Redirect(w, r, "/login", 302)
 	return nil
 }
 

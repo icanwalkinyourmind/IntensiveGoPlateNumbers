@@ -8,13 +8,22 @@ import (
 type Notation struct {
 	gorm.Model
 
-	Number int
+	Number string
 	Img    string
-	UserID int64 `gorm:"not null;index"`
+	ImgRes float64
+	UserID uint `gorm:"not null;index"`
 }
 
 func (n *Notation) Save() error {
 	return db.Get().Create(n).Error
+}
+
+func (n *Notation) Get(user uint) error {
+	return db.Get().Where("user_id = ?", user).First(n).Error
+}
+
+func GetLatest(user, limit uint, notations *[]Notation) interface{} {
+	return db.Get().Limit(limit).Where("user_id = ?", user).Order("created_at desc").Find(notations).Error
 }
 
 func init() {

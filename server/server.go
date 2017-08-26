@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"../confreader"
 	"../contexts/loggedin"
+	"../models/history"
 	"../rpnr"
 	"../workers"
 	"./controller"
@@ -27,12 +30,10 @@ type IPool interface {
 	AddTaskSyncTimed(f workers.Func, timeout time.Duration) (interface{}, error)
 }
 
-const (
-	requestWaitInQueueTimeout = time.Millisecond * 100
-	solt                      = "i_love_perl"
-)
+const requestWaitInQueueTimeout = time.Millisecond * 100
 
 //html templates
+var hist = template.Must(template.ParseFiles("assets/history.html"))
 var index = template.Must(template.ParseFiles("assets/index.html"))
 var login = template.Must(template.ParseFiles("assets/login.html"))
 var registration = template.Must(template.ParseFiles("assets/registration.html"))
@@ -44,7 +45,6 @@ var wp IPool
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
-		fmt.Println("method:", r.Method)
 		if r.Method == http.MethodGet {
 			login.Execute(w, nil)
 		} else {
@@ -64,16 +64,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func regHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
-		tmpl := registration
-		fmt.Println("method:", r.Method)
 		if r.Method == http.MethodGet {
-			tmpl.Execute(w, nil)
+			registration.Execute(w, nil)
 		} else {
 			err := controller.RegisterUser(w, r)
 			if err != nil {
-				tmpl.Execute(w, struct{ Res string }{Res: err.Error()})
+				registration.Execute(w, struct{ Res string }{Res: err.Error()})
 			} else {
-				http.Redirect(w, r, "/login", 301)
+				http.Redirect(w, r, "/login", 302)
 			}
 		}
 		return nil
@@ -83,13 +81,39 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
+func historyHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
-		fmt.Println("method:", r.Method)
-		fmt.Println("in root")
 		u, ok := loggedin.FromContext(r.Context())
 		if !ok {
-			http.Redirect(w, r, "/login", 301)
+			http.Redirect(w, r, "/login", 302)
+			return nil
+		}
+		if r.Method == http.MethodGet {
+			var notations []history.Notation
+			//var paths []string
+			history.GetLatest(u.ID, 10, &notations)
+			/*for _, n := range notations {
+				paths = append(paths, n.Img)
+			}*/
+			hist.Execute(w, struct {
+				Res      string
+				Username string
+				Srcs     []history.Notation
+			}{Res: "", Srcs: notations, Username: u.Username})
+		}
+		return nil
+	}, requestWaitInQueueTimeout)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
+	}
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := wp.AddTaskSyncTimed(func() interface{} {
+		u, ok := loggedin.FromContext(r.Context())
+		if !ok {
+			http.Redirect(w, r, "/login", 302)
 			return nil
 		}
 		if r.Method == http.MethodGet {
@@ -97,7 +121,10 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 			index.Execute(w, struct{ Res, Username string }{Res: "", Username: u.Username})
 
 		} else {
-			r.ParseMultipartForm(32 << 20)
+			err := r.ParseMultipartForm(32 << 20)
+			if err != nil {
+				index.Execute(w, struct{ Res, Username, Err string }{Username: u.Username, Err: err.Error()})
+			}
 			file, handler, err := r.FormFile("uploadfile")
 			if err != nil {
 				fmt.Println(err)
@@ -106,18 +133,33 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			defer file.Close()
 
-			f, err := os.OpenFile("./"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+			handler.Filename = "assets/dbImages/" + u.Username + "_" + strconv.Itoa(time.Now().Nanosecond()) + ".png"
+			f, err := os.OpenFile(handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 			if err != nil {
 				fmt.Println(err)
 				index.Execute(w, struct{ Res, Username, Err string }{Username: u.Username, Err: err.Error()})
 				return nil
 			}
 			defer f.Close()
-			io.Copy(f, file)
-			//
-			result, er := rpnr.GetPlateNumber(handler.Filename)
+
+			_, err = io.Copy(f, file)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
+			}
+			result, resolution, er := rpnr.GetPlateNumber(handler.Filename)
 			index.Execute(w, struct{ Res, Username, Err string }{Res: "Result: " + result + er})
-			//
+			n := history.Notation{
+				Number: result,
+				Img:    handler.Filename,
+				ImgRes: resolution,
+				UserID: u.ID,
+			}
+			err = n.Save()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, fmt.Sprintf("error: %s!\n", err), 500)
+			}
 		}
 		return nil
 	}, requestWaitInQueueTimeout)
@@ -131,13 +173,14 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := wp.AddTaskSyncTimed(func() interface{} {
 		u, ok := loggedin.FromContext(r.Context())
 		if !ok {
-			http.Redirect(w, r, "/login", 301)
+			http.Redirect(w, r, "/login", 302)
 			return nil
 		}
-		expiration := time.Now().AddDate(0, 0, -1)
+		delete(sessions, u.Username)
+		/*expiration := time.Now().AddDate(0, 0, -1)
 		cookie := &http.Cookie{Name: "username", Value: u.Username, Expires: expiration}
-		http.SetCookie(w, cookie)
-		login.Execute(w, nil)
+		http.SetCookie(w, cookie)*/
+		http.Redirect(w, r, "/login", 302)
 		return nil
 	}, requestWaitInQueueTimeout)
 	if err != nil {
@@ -162,5 +205,6 @@ func RunHTTPServer() error {
 	mux.Handle("/", loggedin.AddLoginContext(http.HandlerFunc(rootHandler), &sessions))
 	mux.Handle("/logout", loggedin.AddLoginContext(http.HandlerFunc(logoutHandler), &sessions))
 	mux.HandleFunc("/register", regHandler)
+	mux.Handle("/history", loggedin.AddLoginContext(http.HandlerFunc(historyHandler), &sessions))
 	return http.ListenAndServe(conf.Server, mux)
 }
