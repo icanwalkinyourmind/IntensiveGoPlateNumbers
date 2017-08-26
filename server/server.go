@@ -69,7 +69,8 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			err := controller.RegisterUser(w, r)
 			if err != nil {
-				registration.Execute(w, struct{ Res string }{Res: err.Error()})
+				log.Println(err)
+				registration.Execute(w, struct{ Res string }{Res: ""})
 			} else {
 				http.Redirect(w, r, "/login", 302)
 			}
